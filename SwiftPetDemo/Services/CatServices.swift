@@ -7,11 +7,14 @@
 
 import Foundation
 
-class CatService {
-    static let shared = CatService()
-    
-    private init() {}
-    
+protocol CatServiceProtocol {
+    func fetchData<T: Decodable>(from urlString: String, decodeTo type: T.Type) async throws -> T
+    func fetchRandomCatImage(from urlString: String) async throws -> Cat
+    func fetchRandomCatFact(from urlString: String) async throws -> String
+}
+
+class CatService: CatServiceProtocol {
+
     func fetchData<T: Decodable>(from urlString: String, decodeTo type: T.Type) async throws -> T {
         guard let url = URL(string: urlString) else {
             throw URLError(.badURL)
@@ -28,7 +31,7 @@ class CatService {
         }
         return cat
     }
-    
+       
     func fetchRandomCatFact(from urlString: String) async throws -> String {
         struct CatFact: Decodable {
             let data: [String]
@@ -36,4 +39,5 @@ class CatService {
         let fact = try await fetchData(from: urlString, decodeTo: CatFact.self)
         return fact.data.first ?? "No fact available"
     }
+
 }

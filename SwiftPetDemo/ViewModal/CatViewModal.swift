@@ -13,6 +13,11 @@ class CatViewModel: ObservableObject {
     @Published var catFact: String = "Tap to load a random cat and fact!"
     @Published var isLoading: Bool = false
     
+    private let service: CatServiceProtocol
+    init(service: CatServiceProtocol = CatService()) {
+        self.service = service
+    }
+    
     func loadRandomCat() async {
         DispatchQueue.main.async {
             self.isLoading = true
@@ -23,19 +28,21 @@ class CatViewModel: ObservableObject {
             }
         }
         do {
-            async let fetchCatImage = CatService.shared.fetchRandomCatImage(from: constant.catRandomImage)
-            async let fact = CatService.shared.fetchRandomCatFact(from: constant.catFacts)
-            
-            let (fetchedCat, fetchedFact) = try await (fetchCatImage, fact)
-            
+            async let fetchedCat = service.fetchRandomCatImage(from: constant.catRandomImage)
+            async let fetchedFact = service.fetchRandomCatFact(from: constant.catFacts)
+            let (cat, fact) = try await (fetchedCat, fetchedFact)
             DispatchQueue.main.async {
-                self.catImageURL = fetchedCat.url
-                self.catFact = fetchedFact
+                self.catImageURL = cat.url
+                self.catFact = fact
             }
         } catch {
             DispatchQueue.main.async {
                 self.catFact = "Failed to load. Please try again."
             }
+        }
+        // Ensure loading state is reset
+        DispatchQueue.main.async {
+            self.isLoading = false
         }
     }
 }

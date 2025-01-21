@@ -12,27 +12,7 @@ struct RandomCatView: View {
     
     var body: some View {
         VStack {
-            if let imageURL = viewModel.catImageURL {
-                AsyncImage(url: URL(string: imageURL)) { phase in
-                    switch phase {
-                    case .empty:
-                        ProgressView()
-                    case .success(let image):
-                        image.resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 300)
-                    case .failure:
-                        Image(systemName: "xmark.octagon")
-                    @unknown default:
-                        EmptyView()
-                    }
-                }
-            } else {
-                Image(systemName: "photo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 300)
-            }
+            DynamicImageView(imageURL: viewModel.catImageURL, isLoading: viewModel.isLoading)
             Text(viewModel.catFact)
                 .padding()
                 .multilineTextAlignment(.center)
@@ -42,10 +22,11 @@ struct RandomCatView: View {
         }
         .padding()
         .contentShape(Rectangle())
-        
         .onTapGesture {
-            Task {
-                await viewModel.loadRandomCat()
+            if !viewModel.isLoading {
+                Task {
+                    await viewModel.loadRandomCat()
+                }
             }
         }
         .task {
@@ -54,6 +35,37 @@ struct RandomCatView: View {
     }
 }
 
+@ViewBuilder
+private func DynamicImageView(imageURL: String?, isLoading: Bool) -> some View {
+    if isLoading {
+        ProgressView()
+            .frame(maxHeight: 300)
+    } else if let imageURL = imageURL, let url = URL(string: imageURL) {
+        AsyncImage(url: url) { phase in
+            switch phase {
+            case .empty:
+                ProgressView()
+                    .frame(maxHeight: 300)
+            case .success(let image):
+                image.resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 300)
+            case .failure:
+                Image(systemName: "xmark.octagon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 300)
+            @unknown default:
+                EmptyView()
+            }
+        }
+    } else {
+        Image(systemName: "photo")
+            .resizable()
+            .scaledToFit()
+            .frame(maxHeight: 300)
+    }
+}
 #Preview {
     RandomCatView()
 }
